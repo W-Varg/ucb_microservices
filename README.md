@@ -176,7 +176,7 @@ curl -X POST http://localhost:8080/api/tasks \
 
 #### 5. Listar todas las tareas
 ```bash
-curl http://localhost:8080/api/tasks
+curl http://localhost:8080/api/tasks | jq
 ```
 
 #### 6. Listar todas las tareas (formato JSON legible)
