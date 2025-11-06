@@ -3,12 +3,12 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files (including lock file)
+COPY package.json package-lock.json ./
 COPY tsconfig.json ./
 COPY nest-cli.json ./
 
-# Install dependencies
+# Install dependencies (usar npm ci para instalar desde package-lock.json)
 RUN npm ci
 
 # Copy source code
@@ -22,11 +22,11 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files (including lock file)
+COPY package.json package-lock.json ./
 
 # Install only production dependencies
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist

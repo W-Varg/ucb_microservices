@@ -4,24 +4,7 @@
 
 **Universidad:** UCB - Maestría en Desarrollo de Software  
 **Materia:** Arquitectura de Microservicios  
-**Versión:** 1.0.0
 
----
-
-## 📖 Índice Rápido
-
-- 📚 **Documentación Completa**: Ver [`INDEX.md`](INDEX.md) para navegación de todos los documentos
-- ⚡ **Inicio Rápido**: Ver [`QUICKSTART.md`](QUICKSTART.md) para empezar inmediatamente
-- 📦 **Entrega**: Ver [`ENTREGA.md`](ENTREGA.md) para requisitos y validación
-- 🏗️ **Arquitectura**: Ver [`ARCHITECTURE.md`](ARCHITECTURE.md) para diagramas detallados
-- 🔧 **Patrones**: Ver [`PATTERNS.md`](PATTERNS.md) para implementación de patrones
-- 📊 **Resumen**: Ver [`RESUMEN.md`](RESUMEN.md) para resumen ejecutivo
-
----
-
-## 🎯 Descripción del Proyecto
-
-Este proyecto implementa una **arquitectura de microservicios completa** con NestJS que cumple con todos los requisitos de la práctica, incluyendo patrones de resiliencia, load balancing, y orquestación con Docker Compose.
 
 ### Servicios Implementados
 
@@ -40,12 +23,10 @@ Este proyecto implementa una **arquitectura de microservicios completa** con Nes
 
 ✅ **Documentación API**
 - Swagger UI en cada microservicio
-- Tasks Service: http://localhost/api (a través del Load Balancer)
+- Tasks Service: http://localhost:8080/api (a través del Load Balancer)
 - Analytics Service: http://localhost:3002/api
 
 ---
-
-## 🚀 Inicio Rápido
 
 ### Requisitos Previos
 
@@ -105,33 +86,6 @@ docker compose down -v
 
 ---
 
-## 📚 Comandos Útiles de Docker Compose
-
-```bash
-# Levantar servicios
-docker compose up -d --build          # Construir y ejecutar en background
-docker compose up                     # Ejecutar en foreground (ver logs en vivo)
-
-# Ver estado
-docker compose ps                     # Estado de contenedores
-docker compose logs -f                # Ver logs en tiempo real
-docker compose logs -f [servicio]     # Logs de un servicio específico
-
-# Reconstruir un servicio específico
-docker compose up -d --build tasks-service-1
-
-# Detener y limpiar
-docker compose down                   # Detener y remover contenedores
-docker compose down -v                # + remover volúmenes (datos)
-docker compose restart                # Reiniciar servicios
-
-# Ejecutar comandos dentro de un contenedor
-docker compose exec tasks-service-1 sh
-docker compose exec mongodb-tasks mongosh
-```
-
----
-
 ## 🏗️ Estructura del Proyecto
 
 ```
@@ -154,8 +108,8 @@ ucb_microservices/
 
 ## 🌐 Endpoints Disponibles
 
-### Tasks Service (a través del Load Balancer - Puerto 80)
-**Base URL:** `http://localhost`
+### Tasks Service (a través del Load Balancer - Puerto 8080)
+**Base URL:** `http://localhost:8080`
 
 - `GET /api/tasks` - Obtener todas las tareas
 - `POST /api/tasks` - Crear una nueva tarea
@@ -164,55 +118,242 @@ ucb_microservices/
 - `DELETE /api/tasks/:id` - Eliminar tarea
 - `GET /health` - Health check
 
-**Swagger UI:** http://localhost/api
+**Swagger UI:** http://localhost:8080/api
 
 ### Analytics Service (Puerto 3002)
 **Base URL:** `http://localhost:3002`
 
 - `GET /api/analytics/stats` - Estadísticas generales
 - `GET /api/analytics/tasks-by-priority` - Tareas agrupadas por prioridad
+- `GET /api/analytics/circuit-breaker` - Estado del Circuit Breaker
 - `GET /health` - Health check
 
 **Swagger UI:** http://localhost:3002/api
 
 ---
 
-## 🧪 Pruebas Rápidas
+## 🧪 Pruebas con cURL (Copiar y Pegar)
 
-### Crear una tarea
+### 📋 Tasks Service
+
+#### 1. Health Check
 ```bash
-curl -X POST http://localhost/api/tasks \
+curl http://localhost:8080/health
+```
+
+#### 2. Crear una tarea
+```bash
+curl -X POST http://localhost:8080/api/tasks \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Mi primera tarea",
     "description": "Descripción de prueba",
-    "priority": "high",
-    "status": "pending"
+    "priority": "high"
   }'
 ```
 
-### Listar todas las tareas
+#### 3. Crear tarea con prioridad media
 ```bash
-curl http://localhost/api/tasks
+curl -X POST http://localhost:8080/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Tarea con prioridad media",
+    "description": "Esta es una tarea de prioridad media",
+    "priority": "medium"
+  }'
 ```
 
-### Obtener estadísticas
+#### 4. Crear tarea con prioridad baja
+```bash
+curl -X POST http://localhost:8080/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Tarea con prioridad baja",
+    "description": "Esta es una tarea de prioridad baja",
+    "priority": "low"
+  }'
+```
+
+#### 5. Listar todas las tareas
+```bash
+curl http://localhost:8080/api/tasks
+```
+
+#### 6. Listar todas las tareas (formato JSON legible)
+```bash
+curl -s http://localhost:8080/api/tasks | jq
+```
+
+#### 7. Obtener una tarea específica por ID
+**NOTA**: primero debe crear una tarea para poder obtener un ID, y asi para podeer trabajar con el siguiente comando
+sino va dar `error`
+
+```bash
+# Primero obtén el ID de una tarea
+TASK_ID=$(curl -s http://localhost:8080/api/tasks | jq -r '.[0]._id')
+
+# Luego consulta esa tarea
+curl http://localhost:8080/api/tasks/$TASK_ID
+```
+
+#### 8. Actualizar una tarea (marcar como completada)
+```bash
+# Obtén el ID de una tarea
+TASK_ID=$(curl -s http://localhost:8080/api/tasks | jq -r '.[0]._id')
+
+# Actualiza la tarea
+curl -X PATCH http://localhost:8080/api/tasks/$TASK_ID \
+  -H "Content-Type: application/json" \
+  -d '{
+    "completed": true
+  }'
+```
+
+#### 9. Actualizar título y descripción de una tarea
+```bash
+# Obtén el ID de una tarea
+TASK_ID=$(curl -s http://localhost:8080/api/tasks | jq -r '.[0]._id')
+
+# Actualiza la tarea
+curl -X PATCH http://localhost:8080/api/tasks/$TASK_ID \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Título actualizado",
+    "description": "Nueva descripción"
+  }'
+```
+
+#### 10. Eliminar una tarea
+```bash
+# Obtén el ID de una tarea
+TASK_ID=$(curl -s http://localhost:8080/api/tasks | jq -r '.[0]._id')
+
+# Elimina la tarea
+curl -X DELETE http://localhost:8080/api/tasks/$TASK_ID
+```
+
+---
+
+### 📊 Analytics Service
+
+#### 1. Health Check
+```bash
+curl http://localhost:3002/health
+```
+
+#### 2. Obtener estadísticas generales
 ```bash
 curl http://localhost:3002/api/analytics/stats
 ```
 
-### Obtener tareas por prioridad
+#### 3. Obtener estadísticas (formato legible)
+```bash
+curl -s http://localhost:3002/api/analytics/stats | jq
+```
+
+#### 4. Obtener tareas agrupadas por prioridad
 ```bash
 curl http://localhost:3002/api/analytics/tasks-by-priority
 ```
 
-### Verificar health checks
+#### 5. Obtener tareas por prioridad (formato legible)
 ```bash
-# Tasks Service (a través del Load Balancer)
-curl http://localhost/health
+curl -s http://localhost:3002/api/analytics/tasks-by-priority | jq
+```
 
-# Analytics Service
-curl http://localhost:3002/health
+#### 6. Ver estado del Circuit Breaker
+```bash
+curl http://localhost:3002/api/analytics/circuit-breaker
+```
+
+#### 7. Resetear Circuit Breaker
+```bash
+curl -X POST http://localhost:3002/api/analytics/circuit-breaker/reset
+```
+
+---
+
+### 🧪 Pruebas de Patrones de Resiliencia
+
+#### Probar Load Balancing (varias peticiones)
+```bash
+# Ejecutar 10 peticiones y ver qué instancia responde
+for i in {1..10}; do
+  echo "Request $i:"
+  curl -s http://localhost:8080/health | jq -r '.instance'
+done
+```
+
+#### Crear múltiples tareas rápidamente
+```bash
+# Crear 5 tareas para pruebas
+for i in {1..5}; do
+  curl -X POST http://localhost:8080/api/tasks \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"title\": \"Tarea automatizada $i\",
+      \"description\": \"Creada automáticamente para pruebas\",
+      \"priority\": \"medium\"
+    }" && echo ""
+done
+```
+
+#### Probar Circuit Breaker
+
+**Paso 1: Verificar estado normal**
+```bash
+curl -s http://localhost:3002/api/analytics/circuit-breaker | jq
+```
+
+**Paso 2: Detener Tasks Service para forzar errores**
+```bash
+docker compose stop tasks-service-1 tasks-service-2
+```
+
+**Paso 3: Hacer múltiples peticiones para abrir el circuito**
+```bash
+for i in {1..6}; do
+  echo "Attempt $i:"
+  curl -s http://localhost:3002/api/analytics/stats | jq '.circuitBreakerState'
+  sleep 1
+done
+```
+
+**Paso 4: Verificar que el circuito está abierto**
+```bash
+curl -s http://localhost:3002/api/analytics/circuit-breaker | jq
+```
+
+**Paso 5: Reiniciar Tasks Service**
+```bash
+docker compose start tasks-service-1 tasks-service-2
+```
+
+**Paso 6: Esperar y verificar recuperación**
+```bash
+sleep 65  # Esperar el timeout del circuit breaker
+curl -s http://localhost:3002/api/analytics/stats | jq
+```
+
+---
+
+### 📈 Monitoreo Continuo
+
+#### Ver logs en tiempo real
+```bash
+# Todos los servicios
+docker compose logs -f
+
+# Solo Analytics Service
+docker compose logs -f analytics-service
+
+# Solo Tasks Services
+docker compose logs -f tasks-service-1 tasks-service-2
+```
+
+#### Estadísticas cada 5 segundos
+```bash
+watch -n 5 'curl -s http://localhost:3002/api/analytics/stats | jq'
 ```
 
 ---
@@ -220,54 +361,35 @@ curl http://localhost:3002/health
 ## 🏛️ Arquitectura
 
 ```
-┌─────────────┐
-│   Cliente   │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────────────┐
-│  NGINX Load Balancer│  (Puerto 80)
-│   (Round Robin)     │
-└──────┬──────────────┘
-       │
-       ├──────────────┬──────────────┐
-       ▼              ▼              ▼
-┌──────────────┐ ┌──────────────┐  │
-│Tasks Service │ │Tasks Service │  │
-│  Réplica 1   │ │  Réplica 2   │  │
-└──────┬───────┘ └──────┬───────┘  │
-       │                │           │
-       └────────┬───────┘           │
-                ▼                   ▼
-         ┌──────────────┐   ┌──────────────┐
-         │  MongoDB     │   │  Analytics   │
-         │  Tasks DB    │◄──│   Service    │
-         └──────────────┘   └──────────────┘
-                              (Puerto 3002)
+┌─────────────────────────────────────────────────────┐
+│                     Cliente                         │
+└────────────────────┬────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────┐
+│         NGINX Load Balancer (Puerto 80)             │
+│         - Round-robin algorithm                     │
+│         - Health checks                             │
+└──────┬──────────────────────────────────────────────┘
+       ├──────────────────────┬──────────────────┐
+       ▼                      ▼                  ▼
+┌─────────────────────┐ ┌───────────────────┐    │
+│Tasks Service   (A)  │ │Tasks Service (A)  │    │
+│  Réplica 1          │ │  Réplica 2        │    │
+│ (Puerto: 3001)      │ │ (Puerto: 3001)    │    │
+└──────┬──────────────┘ └──────┬────────────┘    │
+       │                       │                 │
+       └────────┬──────────────┘                 │
+                ▼                                ▼
+         ┌──────────────┐          ┌──────────────────┐
+         │  MongoDB     │          │  Analytics       │
+         │  Tasks DB    │◄─────────│   Service (B)    │ ◄─ HTTP + Retry + Circuit Breaker
+         └──────────────┘          └──────────────────┘
+                                    (Puerto 3002)
 ```
 
 ---
 
-## 🛡️ Patrones de Resiliencia Implementados
-
-### 1. Circuit Breaker
-Protege contra fallos en cascada cuando el Tasks Service no responde:
-- **Estados**: CLOSED → OPEN → HALF_OPEN
-- **Configuración**: 
-  - Umbral de fallos: 5
-  - Timeout de apertura: 60 segundos
-
-### 2. Retry Pattern
-Reintentos automáticos con backoff exponencial:
-- **Reintentos**: 3 intentos
-- **Backoff**: Exponencial (1s, 2s, 4s)
-
-### 3. Load Balancing
-NGINX distribuye peticiones entre 2 réplicas del Tasks Service:
-- **Algoritmo**: Round Robin
-- **Health checks**: Cada 10 segundos
-
----
 
 ## 🗄️ Base de Datos
 
@@ -283,27 +405,6 @@ docker compose down -v
 
 ---
 
-## 🔧 Desarrollo Local (Opcional)
-
-Si deseas desarrollar sin Docker:
-
-### Tasks Service
-```bash
-cd tasks-service
-npm install
-npm run start:dev
-```
-
-### Analytics Service
-```bash
-cd analytics-service
-npm install
-npm run start:dev
-```
-
-**Nota:** Necesitarás MongoDB corriendo localmente en `mongodb://localhost:27017`
-
----
 
 ## 📊 Monitoreo
 
@@ -317,10 +418,7 @@ docker compose ps
 docker compose logs -f
 ```
 
-### Ver estadísticas de recursos
-```bash
-docker stats
-```
+
 
 ### Inspeccionar un contenedor específico
 ```bash
@@ -329,23 +427,8 @@ docker compose exec tasks-service-1 sh
 
 ---
 
-## 🐛 Troubleshooting
 
-### Los servicios no levantan
-```bash
-# Ver logs detallados
-docker compose logs
 
-# Reconstruir desde cero
-docker compose down -v
-docker compose up -d --build
-```
-
-### Puerto 80 ya está en uso
-Si tienes otro servicio usando el puerto 80 (como Apache/Nginx local):
-1. Detén el servicio local: `sudo systemctl stop nginx` o `sudo systemctl stop apache2`
-2. O modifica el puerto en `docker compose.yml` cambiando `"80:80"` a `"8080:80"`
-3. Accede entonces en: http://localhost:8080
 
 ### MongoDB no se conecta
 ```bash
@@ -360,24 +443,33 @@ docker compose restart mongodb-tasks
 
 ## 📦 Variables de Entorno
 
-Configurables en `docker compose.yml`:
+Todas las variables de entorno están configuradas en `docker-compose.yml`:
 
-| Variable | Servicio | Descripción |
-|----------|----------|-------------|
-| `PORT` | Tasks/Analytics | Puerto del servicio |
-| `MONGODB_URI` | Tasks | URI de conexión a MongoDB |
-| `TASKS_SERVICE_URL` | Analytics | URL del Tasks Service |
-| `INSTANCE_NAME` | Tasks | Nombre de la instancia |
+### Tasks Service
+| Variable | Valor | Descripción |
+|----------|-------|-------------|
+| `PORT` | 3001 | Puerto del servicio |
+| `MONGODB_URI` | mongodb://mongodb-tasks:27017/tasks-db | URI de conexión a MongoDB |
+| `INSTANCE_NAME` | tasks-service-1/2 | Nombre de la instancia |
+| `NODE_ENV` | development | Entorno de ejecución |
+| `TZ` | America/La_Paz | Zona horaria |
+
+### Analytics Service
+| Variable | Valor | Descripción |
+|----------|-------|-------------|
+| `PORT` | 3002 | Puerto del servicio |
+| `TASKS_SERVICE_URL` | http://nginx-lb | URL del Tasks Service |
+| `NODE_ENV` | development | Entorno de ejecución |
+| `TZ` | America/La_Paz | Zona horaria |
+| `CIRCUIT_BREAKER_THRESHOLD` | 5 | Umbral de fallos para abrir circuito |
+| `CIRCUIT_BREAKER_TIMEOUT` | 60000 | Timeout en ms para cerrar circuito |
+| `RETRY_ATTEMPTS` | 3 | Número de reintentos |
+| `RETRY_DELAY` | 1000 | Delay inicial entre reintentos (ms) |
+
 
 ---
 
-## 👥 Autor
 
 **UCB - Maestría en Desarrollo de Software**  
+**Wilver Vargas**
 Arquitectura de Microservicios - Práctica 1
-
----
-
-## 📄 Licencia
-
-Este proyecto es parte de una práctica académica de la UCB.

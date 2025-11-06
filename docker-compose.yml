@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ==========================================
   # MongoDB para Tasks Service
@@ -32,16 +30,20 @@ services:
     container_name: tasks-service-1
     restart: unless-stopped
     environment:
+      # Configuración del servicio
       - PORT=3001
       - MONGODB_URI=mongodb://mongodb-tasks:27017/tasks-db
       - INSTANCE_NAME=tasks-service-1
+      # Variables de entorno de Node.js
+      - NODE_ENV=development
+      - TZ=America/La_Paz
     depends_on:
       mongodb-tasks:
         condition: service_healthy
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -57,16 +59,20 @@ services:
     container_name: tasks-service-2
     restart: unless-stopped
     environment:
+      # Configuración del servicio
       - PORT=3001
       - MONGODB_URI=mongodb://mongodb-tasks:27017/tasks-db
       - INSTANCE_NAME=tasks-service-2
+      # Variables de entorno de Node.js
+      - NODE_ENV=development
+      - TZ=America/La_Paz
     depends_on:
       mongodb-tasks:
         condition: service_healthy
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -82,14 +88,14 @@ services:
     container_name: nginx-lb
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - tasks-service-1
       - tasks-service-2
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -106,14 +112,23 @@ services:
     ports:
       - "3002:3002"
     environment:
+      # Configuración del servicio
       - PORT=3002
       - TASKS_SERVICE_URL=http://nginx-lb
+      # Variables de entorno de Node.js
+      - NODE_ENV=development
+      - TZ=America/La_Paz
+      # Configuración de patrones de resiliencia
+      - CIRCUIT_BREAKER_THRESHOLD=5
+      - CIRCUIT_BREAKER_TIMEOUT=60000
+      - RETRY_ATTEMPTS=3
+      - RETRY_DELAY=1000
     depends_on:
       - nginx-lb
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3002/health"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
       interval: 10s
       timeout: 5s
       retries: 3

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpClientService } from '../common/http-client.service';
 
-interface Task {
+export interface Task {
   _id: string;
   title: string;
   description?: string;
