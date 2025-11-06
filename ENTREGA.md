@@ -32,22 +32,20 @@
 
 ### 5. Listo para Ejecutar ✅
 - Sin configuraciones adicionales necesarias
-- Comando único: `docker-compose up --build`
-- Scripts de ayuda incluidos (start.sh, test.sh, stop.sh)
+- Comando único: `docker compose up --build`
+- Docker Compose V2 integrado en Docker 20.10+
 
 ## 📋 Contenido del Entregable
 
 ```
-reuniones/
+ucb_microservices/
 ├── README.md                    # Descripción general del proyecto
 ├── QUICKSTART.md                # Guía de inicio rápido
+├── QUICK_TEST.md                # Guía de verificación y pruebas
 ├── DOCUMENTATION.md             # Documentación técnica completa
 ├── PATTERNS.md                  # Explicación de patrones implementados
 ├── ENTREGA.md                   # Este archivo
-├── docker-compose.yml           # Orquestación completa
-├── start.sh                     # Script de inicio
-├── test.sh                      # Script de pruebas
-├── stop.sh                      # Script de parada
+├── docker compose.yml           # Orquestación completa
 ├── .gitignore                   # Archivos ignorados
 │
 ├── tasks-service/               # Servicio A - Tasks
@@ -120,16 +118,13 @@ chmod +x start.sh test.sh stop.sh
 # Opción 1: Usando script
 ./start.sh
 
-# Opción 2: Manual
-docker-compose up --build -d
+# Comando único para levantar todo
+docker compose up --build -d
 ```
 
 ### Paso 4: Verificar que todo funciona
 ```bash
-# Opción 1: Usando script de pruebas
-./test.sh
-
-# Opción 2: Manual
+# Verificar estado de servicios
 curl http://localhost/health
 curl http://localhost:3002/health
 curl http://localhost/api/tasks
@@ -144,7 +139,7 @@ curl http://localhost:3002/api/analytics/stats
 
 ### 1. Verificar 2 Réplicas del Tasks Service
 ```bash
-docker-compose ps | grep tasks-service
+docker compose ps | grep tasks-service
 ```
 **Resultado esperado**: 2 contenedores (tasks-service-1 y tasks-service-2)
 
@@ -157,7 +152,7 @@ for i in {1..10}; do curl -s http://localhost/health | grep instance; done
 ### 3. Verificar Retry Pattern
 ```bash
 # Ver logs durante una petición
-docker-compose logs -f analytics-service &
+docker compose logs -f analytics-service &
 curl http://localhost:3002/api/analytics/stats
 ```
 **Resultado esperado**: Si hay fallos temporales, se ven reintentos en los logs
@@ -165,7 +160,7 @@ curl http://localhost:3002/api/analytics/stats
 ### 4. Verificar Circuit Breaker
 ```bash
 # Detener Tasks Service
-docker stop tasks-service-1 tasks-service-2
+docker compose stop tasks-service-1 tasks-service-2
 
 # Hacer múltiples peticiones
 for i in {1..5}; do curl http://localhost:3002/api/analytics/stats; sleep 1; done
@@ -233,32 +228,29 @@ curl http://localhost:3002/api/analytics/circuit-breaker
 
 ### Ver logs de todos los servicios
 ```bash
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### Ver logs de un servicio específico
 ```bash
-docker-compose logs -f tasks-service-1
-docker-compose logs -f analytics-service
-docker-compose logs -f nginx-lb
+docker compose logs -f tasks-service-1
+docker compose logs -f analytics-service
+docker compose logs -f nginx-lb
 ```
 
 ### Ver estado de contenedores
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ## 🛑 Detener el Proyecto
 
 ```bash
-# Opción 1: Usando script
-./stop.sh
+# Detener contenedores
+docker compose down
 
-# Opción 2: Manual
-docker-compose down
-
-# Opción 3: Con eliminación de volúmenes
-docker-compose down -v
+# Con eliminación de volúmenes
+docker compose down -v
 ```
 
 ## 📐 Arquitectura Implementada
@@ -348,24 +340,23 @@ docker-compose down -v
 ## 📞 Soporte
 
 Para problemas:
-1. Revisar logs: `docker-compose logs`
-2. Verificar puertos disponibles: `sudo lsof -i :80`
-3. Limpiar y reiniciar: `docker-compose down -v && docker-compose up --build`
+1. Revisar logs: `docker compose logs`
+2. Verificar puertos: `sudo lsof -i :80` y `sudo lsof -i :3002`
+3. Limpiar y reiniciar: `docker compose down -v && docker compose up --build`
 
 ---
 
 ## 📦 Crear ZIP para Entrega
 
 ```bash
-# Desde el directorio padre de 'reuniones'
-cd /home/dev/Documents/developer_folder/ucb/final
-zip -r reuniones.zip reuniones/ -x "*/node_modules/*" "*/dist/*" "*/.git/*"
+# Desde el directorio del proyecto
+zip -r ucb_microservices.zip . -x "*/node_modules/*" "*/dist/*" "*/.git/*"
 ```
 
 ---
 
 **Estudiante**: [Tu Nombre]  
-**Materia**: Arquitectura de Microservicios  
+**Materia**: Arquitectura de Microservicios
 **Institución**: UCB - Maestría en Desarrollo de Software  
 **Fecha**: Noviembre 2024  
 **Práctica**: Número 1 - Microservicios con Patrones de Resiliencia

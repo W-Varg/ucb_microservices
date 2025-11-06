@@ -155,7 +155,7 @@ Este proyecto incluye documentación exhaustiva. Lee los documentos en este orde
 
 ### Archivos de Configuración
 
-#### docker-compose.yml
+#### docker compose.yml
 - Orquestación de 5 servicios
 - Configuración de redes
 - Volúmenes persistentes

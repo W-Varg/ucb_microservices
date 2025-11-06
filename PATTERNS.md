@@ -362,10 +362,10 @@ docker stop tasks-service-1
 curl http://localhost:3002/api/analytics/stats
 
 # 3. Ver logs del retry
-docker-compose logs analytics-service
+docker compose logs analytics-service
 
 # 4. Reiniciar instancia
-docker start tasks-service-1
+docker compose start tasks-service-1
 ```
 
 ### Test 2: Circuit Breaker
@@ -426,14 +426,14 @@ curl http://localhost:3002/api/analytics/stats
 
 ```bash
 # Ver logs de retry y circuit breaker
-docker-compose logs -f analytics-service | grep -E "Retry|Circuit"
+docker compose logs -f analytics-service | grep -E "Retry|Circuit"
 
 # Ver distribución de load balancer
-docker-compose logs -f nginx-lb
+docker compose logs -f nginx-lb
 
 # Ver logs de instancias específicas
-docker-compose logs -f tasks-service-1
-docker-compose logs -f tasks-service-2
+docker compose logs -f tasks-service-1
+docker compose logs -f tasks-service-2
 ```
 
 ---

@@ -4,21 +4,67 @@
 
 ### Iniciar el proyecto
 ```bash
-./start.sh
-# O manualmente:
-docker-compose up --build -d
+# Construir y levantar todos los servicios
+docker compose up -d --build
 ```
 
-### Ejecutar pruebas
+### Ver estado de los servicios
 ```bash
-./test.sh
+docker compose ps
+```
+
+### Ver logs en tiempo real
+```bash
+```bash
+# Todos los servicios
+docker compose logs -f
+
+# Servicio específico
+docker compose logs -f tasks-service-1
+docker compose logs -f tasks-service-2
+docker compose logs -f analytics-service
+docker compose logs -f nginx-lb
+```
+
+## 🐛 Troubleshooting
+
+### Los servicios no inician
+```bash
+# Ver estado
+docker compose ps
+
+# Ver logs de error
+docker compose logs
+
+# Reiniciar desde cero
+docker compose down -v
+docker compose up --build
+```
+
+### Puerto ocupado
+```bash
+# Ver qué proceso usa el puerto 80
+sudo lsof -i :80
+
+# Cambiar puerto en docker compose.yml
+# nginx-lb:
+#   ports:
+#     - "8080:80"  # Cambiar a puerto 8080
+```
+
+### Limpiar todo y empezar de nuevo
+```bash
+docker compose down -v
+```
 ```
 
 ### Detener el proyecto
 ```bash
-./stop.sh
-# O manualmente:
-docker-compose down
+# Solo detener contenedores
+docker compose down
+
+# Detener y eliminar volúmenes (datos)
+docker compose down -v
 ```
 
 ## 📍 URLs Principales
@@ -28,7 +74,7 @@ docker-compose down
 | Load Balancer | http://localhost | Punto de entrada principal |
 | Tasks API | http://localhost/api/tasks | CRUD de tareas (balanceado) |
 | Analytics API | http://localhost:3002/api/analytics/stats | Estadísticas |
-| Swagger - Tasks | http://localhost:3001/api | Documentación Tasks Service |
+| Swagger - Tasks | http://localhost/api | Documentación Tasks Service |
 | Swagger - Analytics | http://localhost:3002/api | Documentación Analytics Service |
 
 ## 🧪 Pruebas Rápidas con cURL
@@ -46,7 +92,8 @@ curl -X POST http://localhost/api/tasks \
   -d '{
     "title": "Mi primera tarea",
     "description": "Probar los microservicios",
-    "priority": "high"
+    "priority": "high",
+    "status": "pending"
   }'
 ```
 
@@ -80,7 +127,7 @@ done
 curl http://localhost:3002/api/analytics/circuit-breaker
 
 # Detener Tasks Service para forzar errores
-docker stop tasks-service-1 tasks-service-2
+docker compose stop tasks-service-1 tasks-service-2
 
 # Intentar obtener stats (fallará y abrirá el circuito tras 3 intentos)
 curl http://localhost:3002/api/analytics/stats
@@ -89,7 +136,7 @@ curl http://localhost:3002/api/analytics/stats
 curl http://localhost:3002/api/analytics/circuit-breaker
 
 # Reiniciar servicios
-docker start tasks-service-1 tasks-service-2
+docker compose start tasks-service-1 tasks-service-2
 
 # Reiniciar circuit breaker
 curl -X POST http://localhost:3002/api/analytics/circuit-breaker/reset
@@ -99,13 +146,13 @@ curl -X POST http://localhost:3002/api/analytics/circuit-breaker/reset
 
 ```bash
 # Todos los servicios
-docker-compose logs -f
+docker compose logs -f
 
 # Servicio específico
-docker-compose logs -f tasks-service-1
-docker-compose logs -f tasks-service-2
-docker-compose logs -f analytics-service
-docker-compose logs -f nginx-lb
+docker compose logs -f tasks-service-1
+docker compose logs -f tasks-service-2
+docker compose logs -f analytics-service
+docker compose logs -f nginx-lb
 ```
 
 ## 🐛 Troubleshooting
@@ -113,14 +160,14 @@ docker-compose logs -f nginx-lb
 ### Los servicios no inician
 ```bash
 # Ver estado
-docker-compose ps
+docker compose ps
 
 # Ver logs de error
-docker-compose logs
+docker compose logs
 
 # Reiniciar desde cero
-docker-compose down -v
-docker-compose up --build
+docker compose down -v
+docker compose up --build
 ```
 
 ### Puerto ocupado
@@ -128,7 +175,7 @@ docker-compose up --build
 # Ver qué proceso usa el puerto 80
 sudo lsof -i :80
 
-# Cambiar puerto en docker-compose.yml
+# Cambiar puerto en docker compose.yml
 # nginx-lb:
 #   ports:
 #     - "8080:80"  # Cambiar a puerto 8080
@@ -136,9 +183,9 @@ sudo lsof -i :80
 
 ### Limpiar todo y empezar de nuevo
 ```bash
-docker-compose down -v
+docker compose down -v
 docker system prune -a
-./start.sh
+docker compose up -d --build
 ```
 
 ## 📚 Documentación Completa
@@ -176,7 +223,7 @@ NGINX Load Balancer
 ## 📦 Estructura de Archivos
 
 ```
-reuniones/
+ucb_microservices/
 ├── tasks-service/          # Servicio A - Gestión de tareas
 │   ├── src/
 │   ├── Dockerfile
@@ -188,10 +235,7 @@ reuniones/
 ├── nginx-lb/              # Load Balancer
 │   ├── nginx.conf
 │   └── Dockerfile
-├── docker-compose.yml     # Orquestación
-├── start.sh              # Script de inicio
-├── test.sh               # Script de pruebas
-└── stop.sh               # Script de parada
+└── docker compose.yml     # Orquestación
 ```
 
 ## 💡 Tips
@@ -203,4 +247,4 @@ reuniones/
 
 ---
 
-**¿Problemas?** Revisa `DOCUMENTATION.md` o los logs con `docker-compose logs`
+**¿Problemas?** Revisa `DOCUMENTATION.md` o los logs con `docker compose logs`

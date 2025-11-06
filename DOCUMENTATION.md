@@ -273,19 +273,19 @@ chmod +x start.sh test.sh stop.sh
 
 ```bash
 # Construir e iniciar
-docker-compose up --build -d
+docker compose up --build -d
 
 # Ver logs
-docker-compose logs -f
+docker compose logs -f
 
 # Ver estado
-docker-compose ps
+docker compose ps
 
 # Detener
-docker-compose down
+docker compose down
 
 # Detener y eliminar volúmenes
-docker-compose down -v
+docker compose down -v
 ```
 
 ### Variables de Entorno
@@ -380,19 +380,19 @@ Este script ejecuta:
 
 ```bash
 # Todos los servicios
-docker-compose logs -f
+docker compose logs -f
 
 # Servicio específico
-docker-compose logs -f tasks-service-1
-docker-compose logs -f analytics-service
-docker-compose logs -f nginx-lb
+docker compose logs -f tasks-service-1
+docker compose logs -f analytics-service
+docker compose logs -f nginx-lb
 ```
 
 ### Métricas NGINX
 
 ```bash
 # Status de NGINX (desde dentro del contenedor)
-docker exec nginx-lb curl http://localhost/nginx-status
+docker compose exec nginx-lb curl http://localhost/nginx-status
 ```
 
 ### Health Checks
@@ -446,8 +446,8 @@ Todos los servicios incluyen health checks configurados en Docker Compose:
 ## 📞 Soporte
 
 Para problemas o preguntas:
-1. Revisar logs: `docker-compose logs`
-2. Verificar health checks: `docker-compose ps`
+1. Revisar logs: `docker compose logs`
+2. Verificar health checks: `docker compose ps`
 3. Consultar documentación Swagger
 
 ---

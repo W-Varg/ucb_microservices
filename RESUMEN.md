@@ -20,7 +20,7 @@
 | 5 | **Circuit Breaker Pattern** | ✅ Completo | 3 estados (CLOSED/OPEN/HALF_OPEN) |
 | 6 | **2 Réplicas con Load Balancer** | ✅ Completo | NGINX + 2 instancias de Tasks Service |
 | 7 | **Docker Compose Completo** | ✅ Completo | 5 servicios orquestados |
-| 8 | **Listo para Ejecutar** | ✅ Completo | `docker-compose up --build` |
+| 8 | **Listo para Ejecutar** | ✅ Completo | `docker compose up --build` |
 
 ---
 
@@ -117,14 +117,11 @@ Load Balancer → Tasks Service
 ./start.sh    # Inicia todo
 ./test.sh     # Ejecuta pruebas
 ./validate.sh # Valida requisitos
-./stop.sh     # Detiene todo
-```
-
-### Opción 2: Docker Compose Manual
+### Comandos Docker Compose
 ```bash
-docker-compose up --build -d
-docker-compose logs -f
-docker-compose down
+docker compose up --build -d
+docker compose logs -f
+docker compose down
 ```
 
 ### Acceso a Servicios
@@ -356,10 +353,13 @@ El proyecto está **100% listo** para ser entregado y ejecutado en cualquier má
 
 ```bash
 # Un solo comando para iniciar todo
-docker-compose up --build
+docker compose up --build -d
 
-# Un solo comando para validar todo
-./validate.sh
+# Ver estado de los servicios
+docker compose ps
+
+# Ver logs
+docker compose logs -f
 ```
 
 **¡Sin configuraciones adicionales necesarias!** 🎉
