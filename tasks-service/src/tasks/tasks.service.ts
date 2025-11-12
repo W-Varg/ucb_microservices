@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Task, TaskDocument } from './schemas/task.schema';
 import { CreateTaskDto, UpdateTaskDto } from './dto/task.dto';
+import { KafkaService } from '../kafka/kafka.service';
 
 @Injectable()
 export class TasksService {
@@ -10,6 +11,7 @@ export class TasksService {
 
   constructor(
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
+    private readonly kafkaService: KafkaService,
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
@@ -17,6 +19,14 @@ export class TasksService {
     const createdTask = new this.taskModel(createTaskDto);
     const saved = await createdTask.save();
     this.logger.log(`Task created successfully with ID: ${saved._id}`);
+    
+    // Publicar evento de tarea creada en Kafka
+    try {
+      await this.kafkaService.publishTaskCreated(saved.toObject());
+    } catch (error) {
+      this.logger.error('Failed to publish task created event', error.message);
+    }
+    
     return saved;
   }
 
@@ -51,6 +61,14 @@ export class TasksService {
     }
     
     this.logger.log(`Task updated successfully: ${id}`);
+    
+    // Publicar evento de tarea actualizada en Kafka
+    try {
+      await this.kafkaService.publishTaskUpdated(id, updatedTask.toObject());
+    } catch (error) {
+      this.logger.error('Failed to publish task updated event', error.message);
+    }
+    
     return updatedTask;
   }
 
@@ -64,6 +82,14 @@ export class TasksService {
     }
     
     this.logger.log(`Task deleted successfully: ${id}`);
+    
+    // Publicar evento de tarea eliminada en Kafka
+    try {
+      await this.kafkaService.publishTaskDeleted(id, deletedTask.toObject());
+    } catch (error) {
+      this.logger.error('Failed to publish task deleted event', error.message);
+    }
+    
     return deletedTask;
   }
 
