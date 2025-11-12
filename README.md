@@ -1,30 +1,56 @@
-# 🚀 Proyecto Microservicios - Reuniones
+# 🚀 Proyecto Microservicios - Sistema de Gestión de Tareas
 
-## 📌 Práctica 1: Microservicios con Patrones de Resiliencia
+## 📌 Prácticas Implementadas
+
+### Práctica 1: Microservicios con Patrones de Resiliencia
+### Práctica 2: Event-Driven Architecture con Kafka
 
 **Universidad:** UCB - Maestría en Desarrollo de Software  
 **Materia:** Arquitectura de Microservicios  
 
+---
 
-### Servicios Implementados
+## 🎯 Servicios Implementados
 
 - **Tasks Service (Servicio A)**: Gestión completa de tareas (CRUD) con 2 réplicas balanceadas
-- **Analytics Service (Servicio B)**: Servicio de analíticas y estadísticas con patrones de resiliencia
+  - Persistencia en MongoDB
+  - Publicador de eventos Kafka (Producer)
+  
+- **Analytics Service (Servicio B)**: Servicio de analíticas y estadísticas
+  - Consumidor de eventos Kafka (Consumer)
+  - Cliente HTTP con patrones de resiliencia
 
-### Características Implementadas
+- **NGINX Load Balancer**: Distribución de carga para Tasks Service
 
-✅ **Patrones de Resiliencia**
-- Circuit Breaker para llamadas HTTP
-- Retry Pattern con backoff exponencial
+- **Kafka Cluster**: Broker de mensajería para comunicación asíncrona
+  - Zookeeper para coordinación
+  - 4 topics específicos para eventos de tareas
 
-✅ **Load Balancing**
-- NGINX como Load Balancer para Tasks Service
-- 2 réplicas del Tasks Service (tasks-service-1 y tasks-service-2)
+---
 
-✅ **Documentación API**
-- Swagger UI en cada microservicio
-- Tasks Service: http://localhost:8080/api (a través del Load Balancer)
-- Analytics Service: http://localhost:3002/api
+## ✨ Características Implementadas
+
+### 🛡️ Patrones de Resiliencia (Práctica 1)
+- ✅ Circuit Breaker para llamadas HTTP síncronas
+- ✅ Retry Pattern con backoff exponencial
+- ✅ Timeout y manejo de errores
+
+### ⚖️ Load Balancing
+- ✅ NGINX como Load Balancer
+- ✅ 2 réplicas del Tasks Service (Round-robin)
+- ✅ Health checks automáticos
+
+### 🔄 Event-Driven Architecture (Práctica 2)
+- ✅ Kafka Cluster configurado
+- ✅ Topics creados automáticamente con `kafka-init`
+- ✅ Tasks Service publica eventos (Producer)
+- ✅ Analytics Service consume eventos (Consumer)
+- ✅ Comunicación dual: HTTP (síncrono) + Kafka (asíncrono)
+
+### 📚 Documentación
+- ✅ Swagger UI en cada microservicio
+- ✅ Tasks Service: http://localhost:8080/api
+- ✅ Analytics Service: http://localhost:3002/api
 
 ---
 
@@ -38,6 +64,10 @@ Para verificar las versiones:
 docker --version
 docker compose version
 ```
+
+---
+
+## 🚀 Inicio Rápido
 
 ### Pasos para Ejecutar
 
@@ -54,18 +84,41 @@ docker compose up -d --build
 
 Este comando:
 - Construye las imágenes Docker de todos los servicios
-- Inicia MongoDB, Tasks Service (2 réplicas), NGINX Load Balancer y Analytics Service
+- Inicia Zookeeper, Kafka, MongoDB
+- Crea los topics de Kafka automáticamente
+- Inicia Tasks Service (2 réplicas), NGINX Load Balancer y Analytics Service
 - Crea la red y volúmenes necesarios
 - Ejecuta todo en segundo plano
+
+⏱️ **Tiempo estimado:** 2-3 minutos para el primer inicio
 
 #### 3. Verificar que los servicios están corriendo
 ```bash
 docker compose ps
 ```
 
-Deberías ver todos los servicios con estado `Up` y `healthy`.
+Deberías ver todos los servicios con estado `Up` y `healthy`:
+- ✅ zookeeper
+- ✅ kafka
+- ✅ kafka-init (exits after creating topics)
+- ✅ mongodb-tasks
+- ✅ tasks-service-1
+- ✅ tasks-service-2
+- ✅ nginx-lb
+- ✅ analytics-service
 
-#### 4. Ver los logs (opcional)
+#### 4. Verificar topics de Kafka creados
+```bash
+docker exec -it kafka kafka-topics --bootstrap-server localhost:9092 --list
+```
+
+Deberías ver:
+- task-created
+- task-deleted
+- task-events
+- task-updated
+
+#### 5. Ver los logs (opcional)
 ```bash
 # Ver logs de todos los servicios
 docker compose logs -f
@@ -73,14 +126,15 @@ docker compose logs -f
 # Ver logs de un servicio específico
 docker compose logs -f tasks-service-1
 docker compose logs -f analytics-service
+docker compose logs -f kafka
 ```
 
-#### 5. Detener todos los servicios
+#### 6. Detener todos los servicios
 ```bash
 # Detener y remover contenedores
 docker compose down
 
-# Detener y eliminar también los volúmenes (datos de MongoDB)
+# Detener y eliminar también los volúmenes (datos de MongoDB y Kafka)
 docker compose down -v
 ```
 
@@ -92,16 +146,29 @@ docker compose down -v
 ucb_microservices/
 ├── tasks-service/          # Servicio A - Gestión de Tareas
 │   ├── src/
+│   │   ├── tasks/         # CRUD de tareas
+│   │   ├── kafka/         # Producer de eventos
+│   │   └── health/        # Health checks
 │   ├── Dockerfile
 │   └── package.json
+│
 ├── analytics-service/      # Servicio B - Analíticas
 │   ├── src/
+│   │   ├── analytics/     # Lógica de analytics
+│   │   ├── kafka/         # Consumer de eventos
+│   │   ├── common/        # HTTP client con resiliencia
+│   │   └── health/        # Health checks
 │   ├── Dockerfile
 │   └── package.json
+│
 ├── nginx-lb/              # Load Balancer
 │   ├── nginx.conf
 │   └── Dockerfile
-└── docker compose.yml     # Orquestación completa
+│
+├── docker-compose.yml     # Orquestación completa
+├── README.md             # Este archivo
+├── KAFKA_README.md       # Guía detallada de Kafka
+└── ARCHITECTURE.md       # Diagrama de arquitectura
 ```
 
 ---
@@ -112,10 +179,10 @@ ucb_microservices/
 **Base URL:** `http://localhost:8080`
 
 - `GET /api/tasks` - Obtener todas las tareas
-- `POST /api/tasks` - Crear una nueva tarea
+- `POST /api/tasks` - Crear una nueva tarea (⚡ publica evento en Kafka)
 - `GET /api/tasks/:id` - Obtener tarea por ID
-- `PATCH /api/tasks/:id` - Actualizar tarea
-- `DELETE /api/tasks/:id` - Eliminar tarea
+- `PATCH /api/tasks/:id` - Actualizar tarea (⚡ publica evento en Kafka)
+- `DELETE /api/tasks/:id` - Eliminar tarea (⚡ publica evento en Kafka)
 - `GET /health` - Health check
 
 **Swagger UI:** http://localhost:8080/api
@@ -123,16 +190,83 @@ ucb_microservices/
 ### Analytics Service (Puerto 3002)
 **Base URL:** `http://localhost:3002`
 
-- `GET /api/analytics/stats` - Estadísticas generales
-- `GET /api/analytics/tasks-by-priority` - Tareas agrupadas por prioridad
+#### Endpoints de Estadísticas
+- `GET /api/analytics/stats` - **Estadísticas combinadas** (HTTP + Kafka)
+- `GET /api/analytics/stats/sync` - Estadísticas via HTTP (síncrono con resiliencia)
+- `GET /api/analytics/stats/event-driven` - Estadísticas via Kafka (asíncrono, caché)
+- `GET /api/analytics/tasks-by-priority` - Tareas agrupadas por prioridad (HTTP)
+
+#### Endpoints de Kafka
+- `GET /api/analytics/events?limit=20` - Historial de eventos de Kafka procesados
 - `GET /api/analytics/circuit-breaker` - Estado del Circuit Breaker
-- `GET /health` - Health check
+- `POST /api/analytics/circuit-breaker/reset` - Reiniciar Circuit Breaker
 
 **Swagger UI:** http://localhost:3002/api
 
+### Kafka (Puerto 9092)
+- Broker interno: `kafka:9092`
+- Broker externo: `localhost:9093`
+
+**Topics disponibles:**
+- `task-created` - Eventos de tareas creadas
+- `task-updated` - Eventos de tareas actualizadas
+- `task-deleted` - Eventos de tareas eliminadas
+- `task-events` - Eventos generales
+
 ---
 
-## 🧪 Pruebas con cURL (Copiar y Pegar)
+## 🧪 Pruebas Rápidas
+
+### 🎯 Escenario 1: Crear tarea y ver evento en Kafka
+
+```bash
+# 1. Crear una tarea (genera evento Kafka)
+curl -X POST http://localhost:8080/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Test Kafka Event",
+    "description": "Esta tarea genera un evento",
+    "priority": "high"
+  }'
+
+# 2. Ver estadísticas event-driven (actualizadas por Kafka)
+curl http://localhost:3002/api/analytics/stats/event-driven | jq
+
+# 3. Ver historial de eventos procesados
+curl http://localhost:3002/api/analytics/events | jq
+```
+
+### 🔄 Escenario 2: Comparar HTTP vs Kafka
+
+```bash
+# Estadísticas via HTTP (síncrono, con resiliencia)
+curl http://localhost:3002/api/analytics/stats/sync | jq
+
+# Estadísticas via Kafka (asíncrono, caché)
+curl http://localhost:3002/api/analytics/stats/event-driven | jq
+
+# Comparación lado a lado
+curl http://localhost:3002/api/analytics/stats | jq
+```
+
+### 📊 Escenario 3: Monitorear eventos en tiempo real
+
+```bash
+# Terminal 1: Ver logs del consumer
+docker compose logs -f analytics-service | grep "Received event"
+
+# Terminal 2: Crear varias tareas
+for i in {1..5}; do
+  curl -X POST http://localhost:8080/api/tasks \
+    -H "Content-Type: application/json" \
+    -d "{\"title\":\"Task $i\",\"priority\":\"high\"}"
+  sleep 1
+done
+```
+
+---
+
+## 🧪 Pruebas con cURL (Completas)
 
 ### 📋 Tasks Service
 
@@ -427,11 +561,40 @@ docker compose exec tasks-service-1 sh
 
 ---
 
+## 🔍 Monitoreo de Kafka
 
-
-
-### MongoDB no se conecta
+### Ver mensajes en tiempo real
 ```bash
+# Consumir mensajes del topic task-created
+docker exec -it kafka kafka-console-consumer \
+  --bootstrap-server localhost:9092 \
+  --topic task-created \
+  --from-beginning
+
+# Ver todos los topics
+docker exec -it kafka kafka-topics --bootstrap-server localhost:9092 --list
+```
+
+### Ver consumer groups
+```bash
+docker exec -it kafka kafka-consumer-groups \
+  --bootstrap-server localhost:9092 \
+  --describe \
+  --group analytics-service-group
+```
+
+### Ver eventos procesados por Analytics
+```bash
+# Eventos recientes
+curl http://localhost:3002/api/analytics/events?limit=10 | jq
+
+# Ver logs del consumer
+docker compose logs -f analytics-service | grep "Received event"
+```
+
+---
+
+## 🐛 Troubleshooting
 # Verificar estado de MongoDB
 docker compose logs mongodb-tasks
 
@@ -465,11 +628,25 @@ Todas las variables de entorno están configuradas en `docker-compose.yml`:
 | `CIRCUIT_BREAKER_TIMEOUT` | 60000 | Timeout en ms para cerrar circuito |
 | `RETRY_ATTEMPTS` | 3 | Número de reintentos |
 | `RETRY_DELAY` | 1000 | Delay inicial entre reintentos (ms) |
+| `KAFKA_BROKER` | kafka:9092 | Broker de Kafka |
+| `KAFKA_ENABLED` | true | Habilitar Kafka |
+| `KAFKA_GROUP_ID` | analytics-service-group | Consumer group ID |
 
+### Tasks Service (Kafka)
+| Variable | Valor | Descripción |
+|----------|-------|-------------|
+| `KAFKA_BROKER` | kafka:9092 | Broker de Kafka |
+| `KAFKA_ENABLED` | true | Habilitar publicación de eventos |
 
 ---
 
+## 📚 Documentación Adicional
+
+- **[KAFKA_README.md](KAFKA_README.md)** - Guía completa de Event-Driven Architecture con Kafka
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Diagramas detallados de la arquitectura del sistema
+
+---
 
 **UCB - Maestría en Desarrollo de Software**  
-**Wilver Vargas**
-Arquitectura de Microservicios - Práctica 1
+**Wilver Vargas**  
+Arquitectura de Microservicios - Prácticas 1 y 2
