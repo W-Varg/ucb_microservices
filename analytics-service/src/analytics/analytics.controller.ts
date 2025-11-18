@@ -1,9 +1,12 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Query, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
+import { JwtAuthGuard } from '../common/jwt-auth.guard';
 
 @ApiTags('analytics')
 @Controller('api/analytics')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
@@ -13,7 +16,8 @@ export class AnalyticsController {
     description: 'Obtiene estadísticas desde HTTP (síncrono) y Kafka (asíncrono)'
   })
   @ApiResponse({ status: 200, description: 'Estadísticas obtenidas exitosamente' })
-  async getStats() {
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  async getStats(@Request() req) {
     return this.analyticsService.getStats();
   }
 
@@ -23,7 +27,8 @@ export class AnalyticsController {
     description: 'Usa comunicación HTTP con patrones Retry + Circuit Breaker'
   })
   @ApiResponse({ status: 200, description: 'Estadísticas HTTP obtenidas' })
-  async getStatsSync() {
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  async getStatsSync(@Request() req) {
     return this.analyticsService.getStatsSync();
   }
 
@@ -33,14 +38,16 @@ export class AnalyticsController {
     description: 'Obtiene estadísticas del caché actualizado por eventos de Kafka'
   })
   @ApiResponse({ status: 200, description: 'Estadísticas de eventos obtenidas' })
-  getStatsEventDriven() {
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  getStatsEventDriven(@Request() req) {
     return this.analyticsService.getStatsEventDriven();
   }
 
   @Get('tasks-by-priority')
   @ApiOperation({ summary: 'Obtener tareas agrupadas por prioridad (HTTP)' })
   @ApiResponse({ status: 200, description: 'Tareas agrupadas obtenidas exitosamente' })
-  async getTasksByPriority() {
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  async getTasksByPriority(@Request() req) {
     return this.analyticsService.getTasksByPriority();
   }
 
@@ -51,21 +58,24 @@ export class AnalyticsController {
   })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Número de eventos (default: 20)' })
   @ApiResponse({ status: 200, description: 'Historial de eventos' })
-  getEventHistory(@Query('limit') limit?: number) {
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  getEventHistory(@Query('limit') limit?: number, @Request() req?) {
     return this.analyticsService.getEventHistory(limit ? parseInt(limit.toString()) : 20);
   }
 
   @Get('circuit-breaker')
   @ApiOperation({ summary: 'Obtener estado del Circuit Breaker' })
   @ApiResponse({ status: 200, description: 'Estado del circuit breaker' })
-  getCircuitBreakerStatus() {
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  getCircuitBreakerStatus(@Request() req) {
     return this.analyticsService.getCircuitBreakerStatus();
   }
 
   @Post('circuit-breaker/reset')
   @ApiOperation({ summary: 'Reiniciar el Circuit Breaker' })
   @ApiResponse({ status: 200, description: 'Circuit breaker reiniciado' })
-  resetCircuitBreaker() {
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  resetCircuitBreaker(@Request() req) {
     return this.analyticsService.resetCircuitBreaker();
   }
 }

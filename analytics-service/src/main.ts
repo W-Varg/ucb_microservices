@@ -23,6 +23,7 @@ async function bootstrap() {
     .setTitle('Analytics Service API')
     .setDescription('Microservicio de analíticas y estadísticas - Servicio B')
     .setVersion('1.0')
+    .addBearerAuth()
     .addTag('analytics')
     .addTag('health')
     .build();
