@@ -23,6 +23,7 @@ async function bootstrap() {
     .setTitle('Tasks Service API')
     .setDescription('Microservicio de gestión de tareas - Servicio A')
     .setVersion('1.0')
+    .addBearerAuth()
     .addTag('tasks')
     .addTag('health')
     .build();
