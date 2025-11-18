@@ -12,13 +12,22 @@
 
 ## 🎯 Servicios Implementados
 
+- **Auth Service**: Autenticación y autorización con OAuth2/JWT
+  - Registro y login de usuarios
+  - Generación y validación de tokens JWT
+  - Refresh tokens
+  - RBAC (Role-Based Access Control)
+  - Persistencia en MongoDB
+
 - **Tasks Service (Servicio A)**: Gestión completa de tareas (CRUD) con 2 réplicas balanceadas
   - Persistencia en MongoDB
   - Publicador de eventos Kafka (Producer)
+  - **Protegido con JWT**
   
 - **Analytics Service (Servicio B)**: Servicio de analíticas y estadísticas
   - Consumidor de eventos Kafka (Consumer)
   - Cliente HTTP con patrones de resiliencia
+  - **Protegido con JWT**
 
 - **NGINX Load Balancer**: Distribución de carga para Tasks Service
 
@@ -30,7 +39,15 @@
 
 ## ✨ Características Implementadas
 
-### 🛡️ Patrones de Resiliencia (Práctica 1)
+### � Autenticación y Autorización
+- ✅ OAuth2/JWT implementado en todos los servicios
+- ✅ Auth Service centralizado
+- ✅ Access tokens (15 min) y Refresh tokens (7 días)
+- ✅ RBAC con roles (user, admin, moderator)
+- ✅ Guards de autenticación y autorización
+- ✅ Passwords hasheados con bcrypt
+
+### �🛡️ Patrones de Resiliencia (Práctica 1)
 - ✅ Circuit Breaker para llamadas HTTP síncronas
 - ✅ Retry Pattern con backoff exponencial
 - ✅ Timeout y manejo de errores
@@ -49,8 +66,10 @@
 
 ### 📚 Documentación
 - ✅ Swagger UI en cada microservicio
+- ✅ Auth Service: http://localhost:3003/api
 - ✅ Tasks Service: http://localhost:8080/api
 - ✅ Analytics Service: http://localhost:3002/api
+- ✅ **Guía de Autenticación**: [AUTH_GUIDE.md](AUTH_GUIDE.md)
 
 ---
 
@@ -102,12 +121,47 @@ Deberías ver todos los servicios con estado `Up` y `healthy`:
 - ✅ kafka
 - ✅ kafka-init (exits after creating topics)
 - ✅ mongodb-tasks
+- ✅ mongodb-auth
+- ✅ auth-service
 - ✅ tasks-service-1
 - ✅ tasks-service-2
 - ✅ nginx-lb
 - ✅ analytics-service
 
-#### 4. Verificar topics de Kafka creados
+#### 4. **IMPORTANTE: Registrar un usuario antes de usar los servicios**
+
+Todos los endpoints de Tasks y Analytics están **protegidos con JWT**. Debes registrarte primero:
+
+```bash
+# Registrar un usuario
+curl -X POST http://localhost:3003/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "usuario_demo",
+    "email": "demo@ucb.edu",
+    "password": "MiPassword123",
+    "roles": ["user"]
+  }'
+```
+
+Guarda el `accessToken` de la respuesta. Luego úsalo en los headers:
+
+```bash
+# Crear una tarea (con token)
+curl -X POST http://localhost:8080/api/tasks \
+  -H "Authorization: Bearer TU_TOKEN_AQUI" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Mi Primera Tarea",
+    "description": "Tarea protegida con JWT",
+    "status": "pending",
+    "priority": "high"
+  }'
+```
+
+📖 **Ver guía completa:** [AUTH_GUIDE.md](AUTH_GUIDE.md)
+
+#### 5. Verificar topics de Kafka creados
 ```bash
 docker exec -it kafka kafka-topics --bootstrap-server localhost:9092 --list
 ```
@@ -118,18 +172,19 @@ Deberías ver:
 - task-events
 - task-updated
 
-#### 5. Ver los logs (opcional)
+#### 6. Ver los logs (opcional)
 ```bash
 # Ver logs de todos los servicios
 docker compose logs -f
 
 # Ver logs de un servicio específico
+docker compose logs -f auth-service
 docker compose logs -f tasks-service-1
 docker compose logs -f analytics-service
 docker compose logs -f kafka
 ```
 
-#### 6. Detener todos los servicios
+#### 7. Detener todos los servicios
 ```bash
 # Detener y remover contenedores
 docker compose down
@@ -144,10 +199,19 @@ docker compose down -v
 
 ```
 ucb_microservices/
+├── auth-service/          # Servicio de Autenticación
+│   ├── src/
+│   │   ├── auth/          # Login, registro, JWT
+│   │   ├── users/         # Gestión de usuarios
+│   │   └── health/        # Health checks
+│   ├── Dockerfile
+│   └── package.json
+│
 ├── tasks-service/          # Servicio A - Gestión de Tareas
 │   ├── src/
 │   │   ├── tasks/         # CRUD de tareas
 │   │   ├── kafka/         # Producer de eventos
+│   │   ├── common/        # JWT guards y decoradores
 │   │   └── health/        # Health checks
 │   ├── Dockerfile
 │   └── package.json
@@ -156,7 +220,7 @@ ucb_microservices/
 │   ├── src/
 │   │   ├── analytics/     # Lógica de analytics
 │   │   ├── kafka/         # Consumer de eventos
-│   │   ├── common/        # HTTP client con resiliencia
+│   │   ├── common/        # HTTP client + JWT guards
 │   │   └── health/        # Health checks
 │   ├── Dockerfile
 │   └── package.json
@@ -167,6 +231,7 @@ ucb_microservices/
 │
 ├── docker-compose.yml     # Orquestación completa
 ├── README.md             # Este archivo
+├── AUTH_GUIDE.md         # Guía de autenticación (JWT, OAuth2)
 ├── KAFKA_README.md       # Guía detallada de Kafka
 └── ARCHITECTURE.md       # Diagrama de arquitectura
 ```
@@ -175,8 +240,22 @@ ucb_microservices/
 
 ## 🌐 Endpoints Disponibles
 
+> ⚠️ **IMPORTANTE**: Todos los endpoints de Tasks y Analytics requieren autenticación JWT.  
+> Ver [AUTH_GUIDE.md](AUTH_GUIDE.md) para instrucciones completas.
+
+### Auth Service (Puerto 3003)
+**Base URL:** `http://localhost:3003`
+
+- `POST /auth/register` - Registrar usuario
+- `POST /auth/login` - Iniciar sesión
+- `POST /auth/refresh` - Renovar token
+- `POST /auth/logout` - Cerrar sesión (requiere JWT)
+- `GET /auth/profile` - Obtener perfil (requiere JWT)
+- `GET /auth/validate` - Validar token (requiere JWT)
+
 ### Tasks Service (a través del Load Balancer - Puerto 8080)
 **Base URL:** `http://localhost:8080`
+**Autenticación:** Bearer Token requerido en header `Authorization`
 
 - `GET /api/tasks` - Obtener todas las tareas
 - `POST /api/tasks` - Crear una nueva tarea (⚡ publica evento en Kafka)
