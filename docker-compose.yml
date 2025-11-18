@@ -129,6 +129,62 @@ services:
       retries: 5
 
   # ==========================================
+  # MongoDB para Auth Service
+  # ==========================================
+  mongodb-auth:
+    image: mongo:7
+    container_name: mongodb-auth
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_DATABASE: auth-db
+    volumes:
+      - mongodb-auth-data:/data/db
+    networks:
+      - microservices-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/auth-db --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # Auth Service - Autenticación y Autorización
+  # ==========================================
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    environment:
+      # Configuración del servicio
+      - PORT=3003
+      - MONGODB_URI=mongodb://mongodb-auth:27017/auth-db
+      # Variables de entorno de Node.js
+      - NODE_ENV=development
+      - TZ=America/La_Paz
+      # Configuración de JWT
+      - JWT_SECRET=mi_clave_secreta_jwt_super_segura_2024
+      - JWT_EXPIRATION=15m
+      - JWT_REFRESH_SECRET=mi_clave_refresh_token_super_segura_2024
+      - JWT_REFRESH_EXPIRATION=7d
+    depends_on:
+      mongodb-auth:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3003/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ==========================================
   # Tasks Service - Réplica 1 (Servicio A)
   # ==========================================
   tasks-service-1:
@@ -145,6 +201,9 @@ services:
       # Variables de entorno de Node.js
       - NODE_ENV=development
       - TZ=America/La_Paz
+      # Configuración de JWT
+      - JWT_SECRET=mi_clave_secreta_jwt_super_segura_2024
+      - JWT_EXPIRATION=15m
       # Configuración de Kafka
       - KAFKA_BROKER=kafka:9092
       - KAFKA_ENABLED=true
@@ -179,6 +238,9 @@ services:
       # Variables de entorno de Node.js
       - NODE_ENV=development
       - TZ=America/La_Paz
+      # Configuración de JWT
+      - JWT_SECRET=mi_clave_secreta_jwt_super_segura_2024
+      - JWT_EXPIRATION=15m
       # Configuración de Kafka
       - KAFKA_BROKER=kafka:9092
       - KAFKA_ENABLED=true
@@ -236,6 +298,9 @@ services:
       # Variables de entorno de Node.js
       - NODE_ENV=development
       - TZ=America/La_Paz
+      # Configuración de JWT
+      - JWT_SECRET=mi_clave_secreta_jwt_super_segura_2024
+      - JWT_EXPIRATION=15m
       # Configuración de patrones de resiliencia
       - CIRCUIT_BREAKER_THRESHOLD=5
       - CIRCUIT_BREAKER_TIMEOUT=60000
@@ -264,6 +329,8 @@ services:
 # ==========================================
 volumes:
   mongodb-tasks-data:
+    driver: local
+  mongodb-auth-data:
     driver: local
   zookeeper-data:
     driver: local
