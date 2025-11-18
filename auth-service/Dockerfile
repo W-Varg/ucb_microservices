@@ -9,7 +9,7 @@ COPY tsconfig.json ./
 COPY nest-cli.json ./
 
 # Install dependencies (usar npm ci para instalar desde package-lock.json)
-RUN npm ci
+RUN npm install
 
 COPY . .
 RUN npm run build
@@ -20,7 +20,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --omit=dev
 
 COPY --from=builder /app/dist ./dist
 

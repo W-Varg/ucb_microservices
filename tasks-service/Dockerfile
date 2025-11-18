@@ -9,7 +9,7 @@ COPY tsconfig.json ./
 COPY nest-cli.json ./
 
 # Install dependencies (usar npm ci para instalar desde package-lock.json)
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY src ./src
@@ -26,7 +26,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install only production dependencies
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
