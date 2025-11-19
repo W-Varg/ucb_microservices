@@ -1,0 +1,44 @@
+### === 1. Testing Health Checks ===
+curl -s -X GET http://127.0.0.1:3003/health
+
+### === 2. Registering User ===
+curl -s -X POST http://127.0.0.1:3003/auth/register \
+   -H "Content-Type: application/json" \
+   -d '{
+     "username": "usuario_demo",
+     "email": "demo@ucb.edu",
+     "password": "MiPassword123",
+     "roles": ["user"]
+   }'
+
+### === 2.1 LOGIN  ===
+curl -s -X POST http://127.0.0.1:3003/auth/login \
+   -H "Content-Type: application/json" \
+   -d '{
+     "username": "usuario_demo",
+    "password": "MiPassword123"
+   }'
+
+### === 3. Testing Access WITHOUT Token (should fail) ===
+curl -s -X GET http://127.0.0.1:8080/api/tasks
+
+### === 4. Creating Task WITH Token ===
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTFkMWY0NDEyNTQyMzc5MzAxNjE5MjIiLCJ1c2VybmFtZSI6InVzdWFyaW9fZGVtbyIsImVtYWlsIjoiZGVtb0B1Y2IuZWR1Iiwicm9sZXMiOlsidXNlciJdLCJpYXQiOjE3NjM1MTk0NjQsImV4cCI6MTc2MzUyMDM2NH0.XW5mkRKXxNQFiEi5fD1M-jVFzYCzZWM7H-OoPEBn8vw
+curl -s -X POST http://127.0.0.1:8080/api/tasks \
+  -H "Authorization: Bearer {{token}}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Mi Primera Tarea",
+    "description": "Tarea protegida con JWT",
+    "priority": "high"
+  }'
+
+### === 6. Listar todas las tareas ===
+curl -s -X GET http://127.0.0.1:8080/api/tasks \
+  -H "Authorization: Bearer {{token}}"
+
+### === 7. Listar todas las tareas ===
+curl -s -X GET http://127.0.0.1:8080/api/tasks/690d01594020a865e6d3ca46 \
+  -H "Authorization: Bearer {{token}}"
+
+### === 8. Actualizar una tarea ===
