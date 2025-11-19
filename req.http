@@ -23,7 +23,7 @@ curl -s -X POST http://127.0.0.1:3003/auth/login \
 curl -s -X GET http://127.0.0.1:8080/api/tasks
 
 ### === 4. Creating Task WITH Token ===
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTFlNDYxNzQ4MTFiZWY0YmU3YzZjYjAiLCJ1c2VybmFtZSI6InVzdWFyaW9fZGVtbyIsImVtYWlsIjoiZGVtb0B1Y2IuZWR1Iiwicm9sZXMiOlsidXNlciJdLCJpYXQiOjE3NjM1OTI0MjIsImV4cCI6MTc2MzU5MzMyMn0.T9bmdiK14ECGMHWSueBnPNJOW6-no2JwBg1-RlkD71g
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTFlNDYxNzQ4MTFiZWY0YmU3YzZjYjAiLCJ1c2VybmFtZSI6InVzdWFyaW9fZGVtbyIsImVtYWlsIjoiZGVtb0B1Y2IuZWR1Iiwicm9sZXMiOlsidXNlciJdLCJpYXQiOjE3NjM1OTY1OTAsImV4cCI6MTc2MzU5NzQ5MH0.Cxo8TMhfSAAJ7SdL0j1tlzrpr136TikNwcfbKISbHNs
 curl -s -X POST http://127.0.0.1:8080/api/tasks \
   -H "Authorization: Bearer {{token}}" \
   -H "Content-Type: application/json" \
@@ -42,3 +42,23 @@ curl -s -X GET http://127.0.0.1:8080/api/tasks/690d01594020a865e6d3ca46 \
   -H "Authorization: Bearer {{token}}"
 
 ### === 8. Actualizar una tarea ===
+
+### === ANALYTICS SERVICE - Estadísticas Combinadas (HTTP + Kafka) ===
+curl -s -X GET http://127.0.0.1:3002/api/analytics/stats \
+  -H "Authorization: Bearer {{token}}"
+
+### === ANALYTICS SERVICE - Estadísticas via HTTP (Síncrono con Resiliencia) ===
+curl -s -X GET http://127.0.0.1:3002/api/analytics/stats/sync \
+  -H "Authorization: Bearer {{token}}"
+
+### === ANALYTICS SERVICE - Estadísticas via Kafka (Event-Driven) ===
+curl -s -X GET http://127.0.0.1:3002/api/analytics/stats/event-driven \
+  -H "Authorization: Bearer {{token}}"
+
+### === ANALYTICS SERVICE - Tareas agrupadas por prioridad ===
+curl -s -X GET http://127.0.0.1:3002/api/analytics/tasks-by-priority \
+  -H "Authorization: Bearer {{token}}"
+
+
+### === ANALYTICS SERVICE - Health Check ===
+curl -s -X GET http://127.0.0.1:3002/health

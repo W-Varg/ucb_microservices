@@ -23,7 +23,40 @@ export class HttpClientService {
   private successCount = 0;
   private readonly successThreshold = 2; // Close circuit after 2 successes in HALF_OPEN
 
-  constructor(private readonly httpService: HttpService) {}
+  // JWT Token for service-to-service communication
+  private serviceToken: string;
+
+  constructor(private readonly httpService: HttpService) {
+    // Initialize service token (this should be obtained from Auth Service)
+    this.initializeServiceToken();
+  }
+
+  /**
+   * Initialize service token for inter-service communication
+   */
+  private async initializeServiceToken(): Promise<void> {
+    try {
+      // For now, we'll create a simple token. In production, this should login to Auth Service
+      // This is a temporary solution - ideally, Analytics Service should authenticate with Auth Service
+      const jwt = require('jsonwebtoken');
+      const jwtSecret = process.env.JWT_SECRET || 'mi_clave_secreta_jwt_super_segura_2024';
+      
+      this.serviceToken = jwt.sign(
+        {
+          sub: 'analytics-service',
+          service: 'analytics',
+          roles: ['service'],
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+        },
+        jwtSecret
+      );
+      
+      this.logger.log('🔑 Service token initialized for inter-service communication');
+    } catch (error) {
+      this.logger.error('Failed to initialize service token', error);
+    }
+  }
 
   /**
    * Make HTTP GET request with Retry Pattern and Circuit Breaker
@@ -76,7 +109,13 @@ export class HttpClientService {
   ): Promise<T> {
     this.logger.log(`Making ${method} request to: ${url}`);
     
-    const request$ = this.httpService.get<T>(url).pipe(
+    // Prepare headers with service token
+    const headers = {
+      'Authorization': `Bearer ${this.serviceToken}`,
+      'Content-Type': 'application/json'
+    };
+    
+    const request$ = this.httpService.get<T>(url, { headers }).pipe(
       timeout(5000), // 5 second timeout
       retry({
         count: retries,
