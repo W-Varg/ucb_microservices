@@ -74,32 +74,16 @@ services:
       echo 'Creando topics de Kafka...'
       
       # Topic para eventos de tareas
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists \
-        --topic task-events \
-        --partitions 3 \
-        --replication-factor 1 \
-        --config retention.ms=86400000
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic task-events --partitions 3 --replication-factor 1 --config retention.ms=86400000
       
       # Topic para eventos de tareas creadas
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists \
-        --topic task-created \
-        --partitions 2 \
-        --replication-factor 1 \
-        --config retention.ms=86400000
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic task-created --partitions 2 --replication-factor 1 --config retention.ms=86400000
       
       # Topic para eventos de tareas actualizadas
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists \
-        --topic task-updated \
-        --partitions 2 \
-        --replication-factor 1 \
-        --config retention.ms=86400000
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic task-updated --partitions 2 --replication-factor 1 --config retention.ms=86400000
       
       # Topic para eventos de tareas eliminadas
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists \
-        --topic task-deleted \
-        --partitions 2 \
-        --replication-factor 1 \
-        --config retention.ms=86400000
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic task-deleted --partitions 2 --replication-factor 1 --config retention.ms=86400000
       
       echo 'Listando topics creados:'
       kafka-topics --bootstrap-server kafka:9092 --list
